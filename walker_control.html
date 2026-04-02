@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Walker BLE Controller</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f5f7fb;
+      margin: 0;
+      padding: 24px 18px;
+      color: #222;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 8px 0 22px;
+      font-size: 30px;
+    }
+
+    .panel {
+      background: #fff;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .center { text-align: center; }
+
+    .top-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .status-title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    .status-box {
+      min-height: 150px;
+      border: 2px solid #e5eaf2;
+      border-radius: 18px;
+      background: #fafcff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px 12px;
+      gap: 16px;
+    }
+
+    .light-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 36px;
+      height: 42px;
+      min-height: 42px;
+    }
+
+    .dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: transparent;
+      opacity: 0;
+      transition: all 0.16s linear;
+    }
+
+    .dot.green {
+      background: #32cd32;
+      box-shadow: 0 0 14px rgba(50,205,50,0.95);
+      opacity: 1;
+    }
+
+    .dot.red {
+      background: #ff3b30;
+      box-shadow: 0 0 14px rgba(255,59,48,0.95);
+      opacity: 1;
+    }
+
+    .status-text {
+      font-size: 18px;
+      font-weight: bold;
+      min-height: 24px;
+      color: #444;
+    }
+
+    .note {
+      font-size: 14px;
+      color: #777;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    .btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 6px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 18px;
+      padding: 18px 12px;
+      min-height: 70px;
+      font-size: 18px;
+      font-weight: bold;
+      color: white;
+      background: #2196F3;
+      cursor: pointer;
+      box-shadow: 0 6px 14px rgba(33,150,243,0.24);
+      transition: transform 0.08s ease, opacity 0.15s ease;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn.stop {
+      background: #f44336;
+      box-shadow: 0 6px 14px rgba(244,67,54,0.24);
+    }
+
+    .btn.loop {
+      background: #6a4cff;
+      box-shadow: 0 6px 14px rgba(106,76,255,0.24);
+    }
+
+    .btn.gray {
+      background: #607d8b;
+      box-shadow: 0 6px 14px rgba(96,125,139,0.24);
+    }
+
+    .btn.wide {
+      grid-column: span 2;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 14px;
+    }
+
+    .task-row {
+      display: grid;
+      grid-template-columns: 1.2fr 1.2fr auto;
+      gap: 12px;
+      margin-bottom: 12px;
+      align-items: center;
+    }
+
+    .input-with-unit {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .unit {
+      font-size: 15px;
+      color: #666;
+      min-width: 58px;
+      text-align: left;
+    }
+
+    select, input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #cfd8e3;
+      font-size: 16px;
+    }
+
+    .small-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 16px;
+      font-weight: bold;
+      color: white;
+      cursor: pointer;
+      background: #ff7043;
+    }
+
+    .add-btn {
+      background: #26a69a;
+      margin-top: 8px;
+      width: 100%;
+    }
+
+    .time-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-top: 8px;
+      margin-bottom: 18px;
+    }
+
+    .loop-status {
+      margin-top: 14px;
+      padding: 14px;
+      background: #f4f7ff;
+      border-radius: 14px;
+      font-size: 15px;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .history-box {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #e0e6ef;
+      border-radius: 14px;
+      background: #fafcff;
+      padding: 10px;
+    }
+
+    .history-item {
+      padding: 9px 10px;
+      border-bottom: 1px solid #eef2f7;
+      font-size: 14px;
+      color: #444;
+    }
+
+    .history-item:last-child { border-bottom: none; }
+
+    .chart-wrap {
+      margin-top: 18px;
+      border: 1px solid #e0e6ef;
+      border-radius: 14px;
+      background: #fafcff;
+      padding: 12px;
+    }
+
+    #dispChart {
+      width: 100%;
+      height: 320px;
+      display: block;
+      background: white;
+      border-radius: 10px;
+    }
+
+    .chart-note {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .connect-badge {
+      display: inline-block;
+      background: #edf2ff;
+      color: #334155;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    @media (max-width: 700px) {
+      .btn-grid { gap: 16px; }
+      .btn { font-size: 17px; min-height: 66px; }
+      .light-row { gap: 28px; }
+      .task-row { grid-template-columns: 1fr; }
+      .time-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Walker Controller</h1>
+
+    <div class="top-row">
+      <button class="btn gray" style="min-height:52px;padding:12px 20px;" onclick="connectBLE()">Connect BLE</button>
+      <button class="btn gray" style="min-height:52px;padding:12px 20px;" onclick="disconnectBLE()">Disconnect</button>
+      <div class="connect-badge" id="connectBadge">BLE: Not Connected</div>
+    </div>
+
+    <div class="panel center">
+      <div class="status-title">Status Bar</div>
+
+      <div class="status-box">
+        <div class="light-row">
+          <div class="dot" id="dot1"></div>
+          <div class="dot" id="dot2"></div>
+          <div class="dot" id="dot3"></div>
+        </div>
+        <div class="status-text" id="statusText">Ready</div>
+      </div>
+
+      <div class="note">3-dot motion indicator</div>
+    </div>
+
+    <div class="panel">
+      <div class="section-title">Manual Control</div>
+      <div class="btn-grid">
+        <button class="btn control-btn" onclick="sendCmd('retract_continuous')">Retract Continuous</button>
+        <button class="btn control-btn" onclick="sendCmd('approach_continuous')">Approach Continuous</button>
+
+        <button class="btn control-btn" onclick="sendCmd('retract_burst')">Retract Burst</button>
+        <button class="btn control-btn" onclick="sendCmd('approach_burst')">Approach Burst</button>
+
+        <button class="btn stop wide control-btn" onclick="sendCmd('stop')">Stop</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-title">Loop Command Task Board</div>
+
+      <div id="taskBoard"></div>
+
+      <button class="btn add-btn" onclick="addTaskRow()">+ Add Task</button>
+
+      <div class="section-title" style="margin-top:18px;">Total Runtime</div>
+      <div class="time-grid">
+        <div class="input-with-unit">
+          <input type="number" id="hoursInput" min="0" value="0" placeholder="0">
+          <div class="unit">hours</div>
+        </div>
+        <div class="input-with-unit">
+          <input type="number" id="minutesInput" min="0" value="0" placeholder="0">
+          <div class="unit">minutes</div>
+        </div>
+        <div class="input-with-unit">
+          <input type="number" id="secondsInput" min="0" value="0" placeholder="0">
+          <div class="unit">seconds</div>
+        </div>
+      </div>
+
+      <div class="btn-grid">
+        <button class="btn loop" onclick="startLoop()">Start Loop</button>
+        <button class="btn gray" onclick="stopLoop()">Stop Loop</button>
+      </div>
+
+      <div class="loop-status" id="loopStatusBox">
+        Loop status: Idle
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-title">History Review</div>
+
+      <div style="margin-bottom:12px;">
+        <button class="btn gray" style="min-height:52px; padding:12px 18px;" onclick="clearHistory()">Clear History</button>
+      </div>
+
+      <div class="history-box" id="historyBox">
+        <div class="history-item">No history yet</div>
+      </div>
+
+      <div class="chart-wrap">
+        <div class="section-title" style="font-size:18px; margin-bottom:10px;">Displacement Review Chart</div>
+        <canvas id="dispChart" width="900" height="320"></canvas>
+        <div class="chart-note">
+          Relative displacement estimate: Approach goes up, Retract goes down, Stop stays flat.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===================== BLE =====================
+    const SERVICE_UUID = '12345678-1234-1234-1234-123456789abc';
+    const CMD_UUID     = 'abcd1234-5678-1234-5678-123456789abc';
+    const STATUS_UUID  = '9abc1234-5678-1234-5678-123456789abc';
+
+    let bleDevice = null;
+    let bleServer = null;
+    let cmdChar = null;
+    let statusChar = null;
+    let bleConnected = false;
+
+    // ===================== UI state =====================
+    let currentMode = "";
+    let animationToken = 0;
+    let burstPlaying = false;
+
+    const STEP_MS = 180;
+    const BURST_TAIL_MS = 180;
+
+    // ===================== local history =====================
+    const historyLog = [];
+    const motionEvents = [];
+    const MAX_HISTORY = 200;
+    const MAX_EVENTS = 240;
+
+    // ===================== loop scheduler (client side) =====================
+    let loopRunning = false;
+    let tasks = [];
+    let currentTaskIndex = 0;
+    let totalLoopDurationMs = 0;
+    let loopStartTime = 0;
+    let currentTaskStartTime = 0;
+    let currentTaskEndTime = 0;
+    let loopTimer = null;
+
+    function nowSec() {
+      return (performance.now() / 1000).toFixed(2);
+    }
+
+    function addHistory(text) {
+      const item = `${nowSec()}s - ${text}`;
+      historyLog.push(item);
+      while (historyLog.length > MAX_HISTORY) historyLog.shift();
+      updateHistory();
+    }
+
+    function updateHistory() {
+      const box = document.getElementById('historyBox');
+      if (historyLog.length === 0) {
+        box.innerHTML = `<div class="history-item">No history yet</div>`;
+        return;
+      }
+      box.innerHTML = historyLog.slice().reverse()
+        .map(x => `<div class="history-item">${x}</div>`)
+        .join('');
+    }
+
+    function addMotionEvent(state) {
+      motionEvents.push({ tMs: performance.now(), state });
+      while (motionEvents.length > MAX_EVENTS) motionEvents.shift();
+    }
+
+    function clearHistory() {
+      historyLog.length = 0;
+      motionEvents.length = 0;
+      addHistory("History cleared");
+      addMotionEvent(0);
+      updateChart();
+    }
+
+    // ===================== BLE connect =====================
+    function updateConnectBadge() {
+      document.getElementById('connectBadge').innerText =
+        bleConnected ? 'BLE: Connected' : 'BLE: Not Connected';
+
+      document.querySelectorAll('.control-btn').forEach(btn => {
+        btn.disabled = !bleConnected;
+      });
+    }
+
+    async function connectBLE() {
+      try {
+        bleDevice = await navigator.bluetooth.requestDevice({
+          filters: [{ name: 'Walker_BLE' }],
+          optionalServices: [SERVICE_UUID]
+        });
+
+        bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+        bleServer = await bleDevice.gatt.connect();
+        const service = await bleServer.getPrimaryService(SERVICE_UUID);
+
+        cmdChar = await service.getCharacteristic(CMD_UUID);
+        statusChar = await service.getCharacteristic(STATUS_UUID);
+
+        await statusChar.startNotifications();
+        statusChar.addEventListener('characteristicvaluechanged', handleStatusNotify);
+
+        const initial = await statusChar.readValue();
+        const txt = new TextDecoder().decode(initial);
+        renderPersistentStatus(txt);
+
+        bleConnected = true;
+        updateConnectBadge();
+        addHistory("BLE connected");
+      } catch (err) {
+        alert("BLE connect failed");
+        console.error(err);
+      }
+    }
+
+    function disconnectBLE() {
+      if (bleDevice && bleDevice.gatt.connected) {
+        bleDevice.gatt.disconnect();
+      }
+    }
+
+    function onDisconnected() {
+      bleConnected = false;
+      cmdChar = null;
+      statusChar = null;
+      updateConnectBadge();
+      addHistory("BLE disconnected");
+    }
+
+    function handleStatusNotify(event) {
+      const value = new TextDecoder().decode(event.target.value);
+      renderPersistentStatus(value);
+    }
+
+    async function writeBLE(text) {
+      if (!cmdChar) {
+        alert("Please connect BLE first");
+        return false;
+      }
+      const data = new TextEncoder().encode(text);
+      await cmdChar.writeValue(data);
+      return true;
+    }
+
+    // ===================== command mapping =====================
+    function mapCmdToBLE(cmd) {
+      if (cmd === 'retract_continuous') return 'R_C';
+      if (cmd === 'retract_burst') return 'R_B';
+      if (cmd === 'stop') return 'STOP';
+      if (cmd === 'approach_burst') return 'A_B';
+      if (cmd === 'approach_continuous') return 'A_C';
+      return '';
+    }
+
+    function stateFromCmd(cmd) {
+      if (cmd.startsWith('retract')) return -1;
+      if (cmd.startsWith('approach')) return +1;
+      return 0;
+    }
+
+    function textFromCmd(cmd) {
+      if (cmd === 'retract_continuous') return 'Retract Continuous';
+      if (cmd === 'retract_burst') return 'Retract Burst';
+      if (cmd === 'stop') return 'Stop';
+      if (cmd === 'approach_burst') return 'Approach Burst';
+      if (cmd === 'approach_continuous') return 'Approach Continuous';
+      return 'Unknown';
+    }
+
+    // ===================== animations =====================
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function clearDots() {
+      for (let i = 1; i <= 3; i++) {
+        document.getElementById('dot' + i).className = 'dot';
+      }
+    }
+
+    function lightDot(index, color) {
+      document.getElementById('dot' + index).className = 'dot ' + color;
+    }
+
+    function offDot(index) {
+      document.getElementById('dot' + index).className = 'dot';
+    }
+
+    function lightAll(color) {
+      lightDot(1, color);
+      lightDot(2, color);
+      lightDot(3, color);
+    }
+
+    function setStatusText(text) {
+      document.getElementById('statusText').innerText = text;
+    }
+
+    async function retractLoop(token) {
+      setStatusText("Retract Continuous");
+      while (token === animationToken && currentMode === "Retract Continuous") {
+        clearDots();
+        lightDot(3, 'green'); await sleep(STEP_MS);
+        if (token !== animationToken || currentMode !== "Retract Continuous") return;
+        lightDot(2, 'green'); await sleep(STEP_MS);
+        if (token !== animationToken || currentMode !== "Retract Continuous") return;
+        lightDot(1, 'green'); await sleep(STEP_MS);
+        if (token !== animationToken || currentMode !== "Retract Continuous") return;
+        offDot(3); await sleep(STEP_MS);
+        if (token !== animationToken || currentMode !== "Retract Continuous") return;
+        offDot(2); await sleep(STEP_MS);
+        if (token !== animationToken || currentMode !== "Retract Continuous") return;
+        offDot(1); await sleep(STEP_MS);
+      }
+    }
+
+    async function approachLoop(token) {
+      setStatusText("Approach Continuous");
+      while (token === animationToken && currentMode === "Approach Continuous") {
+        clearDots();
+        lightDot(1, 'red'); await sleep(STEP_MS);
+        if (token !== animationToken || currentMode !== "Approach Continuous") return;
+        lightDot(2, 'red'); await sleep(STEP_MS);
+        if (token !== animationToken || currentMode !== "Approach Continuous") return;
+        lightDot(3, 'red'); await sleep(STEP_MS);
+        if (token !== animationToken || currentMode !== "Approach Continuous") return;
+        offDot(1); await sleep(STEP_MS);
+        if (token !== animationToken || currentMode !== "Approach Continuous") return;
+        offDot(2); await sleep(STEP_MS);
+        if (token !== animationToken || currentMode !== "Approach Continuous") return;
+        offDot(3); await sleep(STEP_MS);
+      }
+    }
+
+    async function retractBurstOnce(token) {
+      burstPlaying = true;
+      currentMode = "Retract Burst";
+      setStatusText("Retract Burst");
+      clearDots();
+
+      lightAll('green');
+      await sleep(STEP_MS);
+      if (token !== animationToken) return finishBurst();
+
+      offDot(3);
+      await sleep(STEP_MS);
+      if (token !== animationToken) return finishBurst();
+
+      offDot(2);
+      await sleep(STEP_MS);
+      if (token !== animationToken) return finishBurst();
+
+      offDot(1);
+      await sleep(STEP_MS);
+      if (token !== animationToken) return finishBurst();
+
+      lightDot(3, 'green');
+      await sleep(BURST_TAIL_MS);
+      if (token !== animationToken) return finishBurst();
+
+      offDot(3);
+      await sleep(BURST_TAIL_MS);
+      if (token !== animationToken) return finishBurst();
+
+      clearDots();
+      finishBurst();
+    }
+
+    async function approachBurstOnce(token) {
+      burstPlaying = true;
+      currentMode = "Approach Burst";
+      setStatusText("Approach Burst");
+      clearDots();
+
+      lightAll('red');
+      await sleep(STEP_MS);
+      if (token !== animationToken) return finishBurst();
+
+      offDot(1);
+      await sleep(STEP_MS);
+      if (token !== animationToken) return finishBurst();
+
+      offDot(2);
+      await sleep(STEP_MS);
+      if (token !== animationToken) return finishBurst();
+
+      offDot(3);
+      await sleep(STEP_MS);
+      if (token !== animationToken) return finishBurst();
+
+      lightDot(1, 'red');
+      await sleep(BURST_TAIL_MS);
+      if (token !== animationToken) return finishBurst();
+
+      offDot(1);
+      await sleep(BURST_TAIL_MS);
+      if (token !== animationToken) return finishBurst();
+
+      clearDots();
+      finishBurst();
+    }
+
+    function finishBurst() {
+      burstPlaying = false;
+    }
+
+    function showReady() {
+      clearDots();
+      setStatusText("Ready");
+      currentMode = "Ready";
+    }
+
+    function showStop() {
+      clearDots();
+      setStatusText("Stop");
+      currentMode = "Stop";
+    }
+
+    function renderPersistentStatus(text) {
+      if (burstPlaying && (text === "Retract Burst" || text === "Approach Burst")) return;
+
+      if (text === "Retract Burst") {
+        animationToken++;
+        retractBurstOnce(animationToken);
+        return;
+      }
+
+      if (text === "Approach Burst") {
+        animationToken++;
+        approachBurstOnce(animationToken);
+        return;
+      }
+
+      if (text === "Retract Continuous") {
+        if (currentMode === "Retract Continuous") return;
+        animationToken++;
+        currentMode = "Retract Continuous";
+        retractLoop(animationToken);
+      }
+      else if (text === "Approach Continuous") {
+        if (currentMode === "Approach Continuous") return;
+        animationToken++;
+        currentMode = "Approach Continuous";
+        approachLoop(animationToken);
+      }
+      else if (text === "Stop") {
+        animationToken++;
+        showStop();
+      }
+      else if (text === "Ready") {
+        animationToken++;
+        showReady();
+      }
+      else {
+        animationToken++;
+        clearDots();
+        setStatusText(text);
+        currentMode = text;
+      }
+    }
+
+    // ===================== manual command =====================
+    async function sendCmd(cmd) {
+      if (!bleConnected) {
+        alert("Please connect BLE first");
+        return;
+      }
+
+      if (loopRunning) {
+        stopLoopInternal("Interrupted by manual command");
+      }
+
+      const bleCmd = mapCmdToBLE(cmd);
+      if (!bleCmd) return;
+
+      try {
+        await writeBLE(bleCmd);
+
+        const label = textFromCmd(cmd);
+        addHistory(`Action: ${label.toUpperCase()}`);
+        addMotionEvent(stateFromCmd(cmd));
+        updateChart();
+      } catch (err) {
+        console.error(err);
+        alert("Send command failed");
+      }
+    }
+
+    // ===================== loop =====================
+    function addTaskRow(action = "retract", seconds = 5) {
+      const board = document.getElementById('taskBoard');
+      const row = document.createElement('div');
+      row.className = 'task-row';
+
+      row.innerHTML = `
+        <select class="task-action">
+          <option value="retract" ${action === "retract" ? "selected" : ""}>Retract</option>
+          <option value="stop" ${action === "stop" ? "selected" : ""}>Stop</option>
+          <option value="approach" ${action === "approach" ? "selected" : ""}>Approach</option>
+        </select>
+
+        <div class="input-with-unit">
+          <input class="task-seconds" type="number" min="0.1" step="0.1" value="${seconds}" placeholder="0">
+          <div class="unit">seconds</div>
+        </div>
+
+        <button class="small-btn" onclick="this.parentElement.remove()">Delete</button>
+      `;
+
+      board.appendChild(row);
+    }
+
+    function collectTasks() {
+      const rows = document.querySelectorAll('.task-row');
+      const out = [];
+
+      rows.forEach(row => {
+        const action = row.querySelector('.task-action').value;
+        const seconds = parseFloat(row.querySelector('.task-seconds').value);
+        if (!isNaN(seconds) && seconds > 0) {
+          out.push({ action, seconds, durationMs: Math.round(seconds * 1000) });
+        }
+      });
+
+      return out;
+    }
+
+    async function executeLoopTask(idx, keepSchedule) {
+      if (idx < 0 || idx >= tasks.length) return;
+
+      const task = tasks[idx];
+      const cmd = task.action === 'retract'
+        ? 'retract_continuous'
+        : task.action === 'approach'
+        ? 'approach_continuous'
+        : 'stop';
+
+      const now = performance.now();
+
+      if (!keepSchedule || currentTaskEndTime === 0) {
+        currentTaskStartTime = now;
+        currentTaskEndTime = now + task.durationMs;
+      } else {
+        currentTaskStartTime = currentTaskEndTime;
+        currentTaskEndTime = currentTaskEndTime + task.durationMs;
+      }
+
+      await sendLoopCommand(cmd);
+
+      addHistory(`Loop task ${idx + 1}/${tasks.length} -> ${task.action} for ${(task.durationMs / 1000).toFixed(2)} s`);
+    }
+
+    async function sendLoopCommand(cmd) {
+      const bleCmd = mapCmdToBLE(cmd);
+      await writeBLE(bleCmd);
+      addMotionEvent(stateFromCmd(cmd));
+      updateChart();
+    }
+
+    function updateLoopInfo() {
+      let elapsed = 0;
+      let remain = 0;
+
+      if (loopRunning) {
+        elapsed = performance.now() - loopStartTime;
+        remain = Math.max(0, totalLoopDurationMs - elapsed);
+      }
+
+      let taskText = "None";
+      if (loopRunning && tasks.length > 0) {
+        taskText = `${currentTaskIndex + 1}/${tasks.length} - ${tasks[currentTaskIndex].action}`;
+      }
+
+      let txt = "Loop status: " + (loopRunning ? "Running" : "Idle");
+      txt += "<br>Total runtime: " + formatMs(totalLoopDurationMs);
+      txt += "<br>Elapsed time: " + formatMs(elapsed);
+      txt += "<br>Remaining time: " + formatMs(remain);
+      txt += "<br>Current task: " + taskText;
+      document.getElementById('loopStatusBox').innerHTML = txt;
+    }
+
+    function formatMs(ms) {
+      const totalSec = Math.floor(ms / 1000);
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    async function startLoop() {
+      if (!bleConnected) {
+        alert("Please connect BLE first");
+        return;
+      }
+
+      tasks = collectTasks();
+      const hours = parseInt(document.getElementById('hoursInput').value || "0");
+      const minutes = parseInt(document.getElementById('minutesInput').value || "0");
+      const seconds = parseInt(document.getElementById('secondsInput').value || "0");
+
+      if (tasks.length === 0) {
+        alert("Please add at least one task.");
+        return;
+      }
+
+      if (hours === 0 && minutes === 0 && seconds === 0) {
+        alert("Please set a total runtime.");
+        return;
+      }
+
+      if (loopRunning) {
+        stopLoopInternal("Restarted by user");
+      }
+
+      loopRunning = true;
+      currentTaskIndex = 0;
+      totalLoopDurationMs = (hours * 3600 + minutes * 60 + seconds) * 1000;
+      loopStartTime = performance.now();
+      currentTaskStartTime = 0;
+      currentTaskEndTime = 0;
+
+      addHistory("Loop started");
+      await executeLoopTask(currentTaskIndex, false);
+      updateLoopInfo();
+
+      loopTimer = setInterval(async () => {
+        if (!loopRunning) return;
+
+        let now = performance.now();
+        const elapsed = now - loopStartTime;
+
+        if (elapsed >= totalLoopDurationMs) {
+          stopLoopInternal("Reached total runtime");
+          return;
+        }
+
+        while (loopRunning && now >= currentTaskEndTime) {
+          currentTaskIndex++;
+          if (currentTaskIndex >= tasks.length) currentTaskIndex = 0;
+          await executeLoopTask(currentTaskIndex, true);
+          now = performance.now();
+        }
+
+        updateLoopInfo();
+      }, 80);
+    }
+
+    function stopLoopInternal(reason) {
+      loopRunning = false;
+      if (loopTimer) {
+        clearInterval(loopTimer);
+        loopTimer = null;
+      }
+      currentTaskIndex = 0;
+      totalLoopDurationMs = 0;
+      loopStartTime = 0;
+      currentTaskStartTime = 0;
+      currentTaskEndTime = 0;
+
+      writeBLE('STOP').catch(() => {});
+      addHistory("Loop stopped: " + reason);
+      addMotionEvent(0);
+      updateChart();
+      updateLoopInfo();
+    }
+
+    function stopLoop() {
+      if (loopRunning) {
+        stopLoopInternal("Stopped by user");
+      } else {
+        writeBLE('STOP').catch(() => {});
+        addHistory("Stop pressed while loop idle");
+        addMotionEvent(0);
+        updateChart();
+      }
+    }
+
+    // ===================== chart =====================
+    function drawChart(points) {
+      const canvas = document.getElementById('dispChart');
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+
+      ctx.clearRect(0, 0, w, h);
+
+      const padL = 60, padR = 20, padT = 20, padB = 35;
+      const plotW = w - padL - padR;
+      const plotH = h - padT - padB;
+
+      if (!points || points.length === 0) {
+        ctx.fillStyle = '#666';
+        ctx.fillText('No data', 20, 20);
+        return;
+      }
+
+      let minX = points[0].t, maxX = points[0].t;
+      let minY = points[0].y, maxY = points[0].y;
+
+      points.forEach(p => {
+        if (p.t < minX) minX = p.t;
+        if (p.t > maxX) maxX = p.t;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+      });
+
+      if (maxX === minX) maxX = minX + 1;
+      if (maxY === minY) {
+        maxY += 1;
+        minY -= 1;
+      }
+
+      const absY = Math.max(Math.abs(minY), Math.abs(maxY), 1);
+      minY = -absY;
+      maxY = absY;
+
+      const xToPx = x => padL + (x - minX) / (maxX - minX) * plotW;
+      const yToPx = y => padT + (maxY - y) / (maxY - minY) * plotH;
+
+      ctx.strokeStyle = '#e7ecf3';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const y = padT + i * plotH / 4;
+        ctx.beginPath();
+        ctx.moveTo(padL, y);
+        ctx.lineTo(w - padR, y);
+        ctx.stroke();
+      }
+      for (let i = 0; i <= 5; i++) {
+        const x = padL + i * plotW / 5;
+        ctx.beginPath();
+        ctx.moveTo(x, padT);
+        ctx.lineTo(x, h - padB);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = '#9aa7b5';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(padL, yToPx(0));
+      ctx.lineTo(w - padR, yToPx(0));
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(padL, padT);
+      ctx.lineTo(padL, h - padB);
+      ctx.stroke();
+
+      ctx.fillStyle = '#556270';
+      ctx.font = '13px Arial';
+      ctx.fillText('Time (s)', w - 70, h - 10);
+      ctx.fillText('Displacement', 8, 16);
+
+      ctx.fillText(maxY.toFixed(1), 18, yToPx(maxY) + 4);
+      ctx.fillText('0', 40, yToPx(0) + 4);
+      ctx.fillText(minY.toFixed(1), 18, yToPx(minY) + 4);
+
+      ctx.fillText(minX.toFixed(1), xToPx(minX) - 6, h - 12);
+      ctx.fillText(maxX.toFixed(1), xToPx(maxX) - 10, h - 12);
+
+      ctx.strokeStyle = '#2563eb';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(xToPx(points[0].t), yToPx(points[0].y));
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(xToPx(points[i].t), yToPx(points[i].y));
+      }
+      ctx.stroke();
+    }
+
+    function buildChartPoints() {
+      if (motionEvents.length === 0) {
+        return [{ t: 0, y: 0 }];
+      }
+
+      const points = [];
+      let y = 0;
+      const baseT = motionEvents[0].tMs;
+      let prevT = baseT;
+      let prevState = 0;
+
+      points.push({ t: 0, y: 0 });
+
+      for (let i = 0; i < motionEvents.length; i++) {
+        const curT = motionEvents[i].tMs;
+        const dt = (curT - prevT) / 1000;
+        y += prevState * dt;
+        points.push({ t: (curT - baseT) / 1000, y });
+        prevT = curT;
+        prevState = motionEvents[i].state;
+      }
+
+      const nowT = performance.now();
+      const dtLast = (nowT - prevT) / 1000;
+      y += prevState * dtLast;
+      points.push({ t: (nowT - baseT) / 1000, y });
+
+      return points;
+    }
+
+    function updateChart() {
+      drawChart(buildChartPoints());
+    }
+
+    // ===================== init =====================
+    window.onload = () => {
+      addTaskRow("retract", 5);
+      addTaskRow("stop", 2);
+      addTaskRow("approach", 5);
+      updateConnectBadge();
+      addHistory("Page ready");
+      addMotionEvent(0);
+      updateLoopInfo();
+      updateChart();
+    };
+  </script>
+</body>
+</html>
