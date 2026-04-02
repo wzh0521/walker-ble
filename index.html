@@ -462,7 +462,7 @@
     async function connectBLE() {
       try {
         bleDevice = await navigator.bluetooth.requestDevice({
-         acceptAllDevices: true
+          filters: [{ name: 'Walker_BLE' }],
           optionalServices: [SERVICE_UUID]
         });
 
